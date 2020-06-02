@@ -4,134 +4,79 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Shell32;
 
 namespace WPF_Player
 {
     public struct Mp3Info
     {
-        public string identify;//TAG，三个字节     
         public string Title;//歌曲名,30个字节     
         public string Artist;//歌手名,30个字节     
         public string Album;//所属唱片,30个字节      
-        public string Year;//年,4个字符     
         public string Comment;//注释,28个字节      
-        public char reserved1;//保留位，一个字节        
-        public char reserved2;//保留位，一个字节        
-        public char reserved3;//保留位，一个字节    
     }
 
     public class MP3
     {
-        //把MP3文件的最后128个字节分段读出来并保存到该结构里     
-        public byte[] getLast128(string FileName)
+        //检查字符串是否有非法字符
+        public static readonly string LEGAL_CHARACTERS = "abcdefghijklmnopqrstuvwxyz0123456789.@_-";
+
+        public static bool isLegalCharacters2(string sExt)
         {
-            FileStream fs = new FileStream(FileName, FileMode.Open, FileAccess.Read);
-            Stream stream = fs;
-            stream.Seek(-128, SeekOrigin.End);
-            const int seekPos = 128;
-            int rl = 0;
-            byte[] Info = new byte[seekPos];
-            rl = stream.Read(Info, 0, seekPos);
-            fs.Close();
-            stream.Close();
-            return Info;
+            sExt = sExt.ToLower();
+            for (int i = 0; i < sExt.Length; i++)
+            {
+                if (!LEGAL_CHARACTERS.Contains(sExt.Substring(i, 1)))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
-        //再对上面返回的字节数组分段取出，并保存到Mp3Info结构中返回:   
-        public Mp3Info getMp3Info(byte[] Info)
+        //检查字符串是否为全中文
+        public bool IsChinese(string str_chinese)
         {
-            Mp3Info mp3Info = new Mp3Info();
-            string str = null;
-            int i;
-            int position = 0;//循环的起始值     
-            int currentIndex = 0;//Info的当前索引值     
-            //获取TAG标识(数组前3个)     
-            for (i = currentIndex; i < currentIndex + 3; i++)
+            bool b = false;
+            for (int i = 0; i < str_chinese.Length; i++)
             {
-                str = str + (char)Info[i];
-                position++;
+                Regex reg = new Regex(@"[\u4e00-\u9fa5]");
+                if (!reg.IsMatch(str_chinese[i].ToString()))
+                {
+                    b = true;
+                    break;
+                }
             }
-            currentIndex = position;
-            mp3Info.identify = str;
-            //获取歌名（数组3-32）     
-            str = null;
-            byte[] bytTitle = new byte[30];//将歌名部分读到一个单独的数组中     
-            int j = 0;
-            for (i = currentIndex; i < currentIndex + 30; i++)
-            {
-                bytTitle[j] = Info[i];
-                position++;
-                j++;
-            }
-            currentIndex = position;
-            mp3Info.Title = this.byteToString(bytTitle);
-            //获取歌手名（数组33-62）     
-            str = null;
-            j = 0;
-            byte[] bytArtist = new byte[30];//将歌手名部分读到一个单独的数组中     
-            for (i = currentIndex; i < currentIndex + 30; i++)
-            {
-                bytArtist[j] = Info[i];
-                position++;
-                j++;
-            }
-            currentIndex = position;
-            mp3Info.Artist = this.byteToString(bytArtist);
-            //获取唱片名（数组63-92）     
-            str = null;
-            j = 0;
-            byte[] bytAlbum = new byte[30];//将唱片名部分读到一个单独的数组中     
-            for (i = currentIndex; i < currentIndex + 30; i++)
-            {
-                bytAlbum[j] = Info[i];
-                position++;
-                j++;
-            }
-            currentIndex = position;
-            mp3Info.Album = this.byteToString(bytAlbum);
-            //获取年 （数组93-96）    
-            str = null;
-            j = 0;
-            byte[] bytYear = new byte[4];//将年部分读到一个单独的数组中     
-            for (i = currentIndex; i < currentIndex + 4; i++)
-            {
-                bytYear[j] = Info[i];
-                position++;
-                j++;
-            }
-            currentIndex = position;
-            mp3Info.Year = this.byteToString(bytYear);
-            //获取注释（数组97-124）     
-            str = null;
-            j = 0;
-            byte[] bytComment = new byte[28];//将注释部分读到一个单独的数组中     
-            for (i = currentIndex; i < currentIndex + 25; i++)
-            {
-                bytComment[j] = Info[i];
-                position++;
-                j++;
-            }
-            currentIndex = position;
-            mp3Info.Comment = this.byteToString(bytComment);
-            //以下获取保留位（数组125-127）     
-            mp3Info.reserved1 = (char)Info[++position];
-            mp3Info.reserved2 = (char)Info[++position];
-            mp3Info.reserved3 = (char)Info[++position];
-            return mp3Info;
-        }
-        //上面程序用到下面的方法：     
-        ///   <summary>     
-        ///   将字节数组转换成字符串    
-        ///   </summary>     
-        ///   <param   name   =   "b">字节数组</param>     
-        ///   <returns>返回转换后的字符串</returns>     
-        public string byteToString(byte[] b)
-        {
-            Encoding enc = Encoding.GetEncoding("GB2312");
-            string str = enc.GetString(b);
-            str = str.Substring(0, str.IndexOf('\0') >= 0 ? str.IndexOf('\0') : str.Length);//去掉无用字符     
-            return str;
+            return b;
         }
 
+        public Mp3Info getMP3Info(string path)
+        {
+            Mp3Info mp3Info = new Mp3Info();
+
+
+            Shell32.Shell sh = new Shell();
+
+            Folder dir = sh.NameSpace(System.IO.Path.GetDirectoryName(path));
+
+            FolderItem item = dir.ParseName(System.IO.Path.GetFileName(path));
+
+            mp3Info.Artist = dir.GetDetailsOf(item, 20);
+            mp3Info.Album = dir.GetDetailsOf(item, 14);
+            mp3Info.Title = dir.GetDetailsOf(item, 21);
+            mp3Info.Comment = dir.GetDetailsOf(item, 24);
+
+            return mp3Info;
+            //string[] Info = new string[7];
+            //Info[0] = "歌曲名：" + dir.GetDetailsOf(item, 21);   // MP3 歌曲名
+            //Info[1] = "艺术家：" + dir.GetDetailsOf(item, 20);  //Authors
+            //Info[2] = "专  辑：" + dir.GetDetailsOf(item, 14);  // MP3 专辑
+            //Info[3] = dir.GetDetailsOf(item, 27);  // 获取歌曲时长
+            //Info[3] = "时  长：" + Info[3].Substring(Info[3].IndexOf(":") + 1);
+            //Info[4] = "类  型：" + dir.GetDetailsOf(item, 9);
+            //Info[5] = "比特率：" + dir.GetDetailsOf(item, 22);
+            //Info[6] = "备  注：" + dir.GetDetailsOf(item, 24);
+        }
     }
 }
