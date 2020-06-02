@@ -45,7 +45,7 @@ namespace WPF_Player
             Pause,
             Stop
         }
-       
+        
         private EntityInterface EntityService = new EntityServiceImpl();
         public string text { set; get; }
         private bool move = false;
@@ -55,17 +55,14 @@ namespace WPF_Player
         PlayerModel currentModel = PlayerModel.sequence;
         ObservableCollection<Song> playList = new ObservableCollection<Song>();
         private int currentIndex = 0;
-      
-       
-       
-       
+    
         public string t01;
         public string t02;
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             this.rollingText.Text = "音乐播放器处于暂停状态";
             
-       
+          
             this.listBox.DataContext = playList;
             playerhandle = player.GetPlayerHandle();
             playerhandle.MediaEnded += playerhandle_MediaEnded;
@@ -83,11 +80,18 @@ namespace WPF_Player
             if (!Directory.Exists(folderPath))
                 return;
             EntityService.GetMusicFiles(folderPath).ToList().ForEach(x => playList.Add(new Song() { Location = x }));
-          
-          
-          
+            //获取歌词和歌曲数
+            int i = 0;
+            foreach (Song s in playList)
+            {
+                s.LstLynic = GetLynicBySong(s);
+                i++;
+            }
+            this.songSheet.Text = "默认歌单";
+            s2 = this.songSheet.Text;
+           
         }
-       
+        
        
         void player_playEvent_thread(object obj)
         {
@@ -115,7 +119,66 @@ namespace WPF_Player
             this.trackBar.CurrentValue = PlayedTime;
             lastValue = (int)this.trackBar.CurrentValue;
         }
-      
+        //显示歌词
+        private void ShowLynic(List<Lynic> lstLy, double playTime)
+        {
+            if (lstLy == null || lstLy.Count == 0)
+            {
+                return;
+            }
+            int index = player.CurrentSong.LstLynic.FindIndex(0, lstLy.Count, x => playTime - x.MiniSencond < 100 && playTime - x.MiniSencond >= 0);
+            if (index == -1)
+                return;
+            else//满足切换歌词的条件
+            {
+                #region ~~~
+                this.Dispatcher.Invoke((Action)(() =>
+                {
+                    //第二行歌词
+                    System.Windows.Controls.ListBoxItem item2 = lynicBoard.Items[2] as System.Windows.Controls.ListBoxItem;
+                    item2.Content = lstLy[index].Content;
+                    if (index - 1 >= 0)
+                    {
+                        //第1行歌词
+                        System.Windows.Controls.ListBoxItem item1 = lynicBoard.Items[1] as System.Windows.Controls.ListBoxItem;
+                        item1.Content = lstLy[index - 1].Content;
+                    }
+                    if (index - 2 >= 0)
+                    {
+                        //第0行歌词
+                        System.Windows.Controls.ListBoxItem item0 = lynicBoard.Items[0] as System.Windows.Controls.ListBoxItem;
+                        item0.Content = lstLy[index - 2].Content;
+                    }
+                    if (index + 1 < lstLy.Count)
+                    {
+                        //第3行歌词
+                        System.Windows.Controls.ListBoxItem item3 = lynicBoard.Items[3] as System.Windows.Controls.ListBoxItem;
+                        item3.Content = lstLy[index + 1].Content;
+                    }
+                    if (index + 2 < lstLy.Count)
+                    {
+                        //第4行歌词
+                        System.Windows.Controls.ListBoxItem item4 = lynicBoard.Items[4] as System.Windows.Controls.ListBoxItem;
+                        item4.Content = lstLy[index + 2].Content;
+                    }
+                    if (index == lstLy.Count - 1)//歌词到了最后一行
+                    {
+                        System.Windows.Controls.ListBoxItem item3 = lynicBoard.Items[3] as System.Windows.Controls.ListBoxItem;
+                        System.Windows.Controls.ListBoxItem item4 = lynicBoard.Items[4] as System.Windows.Controls.ListBoxItem;
+                        item3.Content = "";
+                        item4.Content = "";
+                    }
+                    if (index == lstLy.Count - 2)//歌词到了倒数第二行
+                    {
+
+                        System.Windows.Controls.ListBoxItem item4 = lynicBoard.Items[4] as System.Windows.Controls.ListBoxItem;
+                        item4.Content = "";
+                    }
+                }));
+
+                #endregion
+            }
+        }
         //滚动条显示当前播放的歌
         void playerhandle_MediaOpened(object sender, EventArgs e)
         {
@@ -135,8 +198,8 @@ namespace WPF_Player
                 {
                     player.CurrentSong.LstLynic.ForEach(x => x.IsShow = false);
                 }
-                PlayNext();
-               
+                PlayNext(); 
+                
             }
         }
         
@@ -181,13 +244,13 @@ namespace WPF_Player
             }
 
         }
-       
+        
         private void btn_Previous_Click(object sender, RoutedEventArgs e)
         {
             if (playList.Count > 0)
                 PlayPrevious();
         }
-        
+      
         void PlayPrevious()
         {
             if (currentStatus == PlayerStatus.Start)
@@ -219,7 +282,7 @@ namespace WPF_Player
             currentStatus = PlayerStatus.Start;
 
         }
-        
+       
         //下一首
         private void btn_Next_Click(object sender, RoutedEventArgs e)
         {
@@ -269,6 +332,21 @@ namespace WPF_Player
 
         }
         
+        private List<Lynic> GetLynicBySong(Song s)
+        {
+            string lynicFile1 = IOPath.Combine(IOPath.GetDirectoryName(s.Location), IOPath.GetFileNameWithoutExtension(s.Location) + ".lrc");
+            string lynicFile2 = IOPath.Combine(IOPath.GetDirectoryName(s.Location), "Lynic", IOPath.GetFileNameWithoutExtension(s.Location) + ".lrc");
+            if (File.Exists(lynicFile1))
+            {
+                return EntityService.GetLynics(lynicFile1);
+            }
+            else if (File.Exists(lynicFile2))
+            {
+                return EntityService.GetLynics(lynicFile2);
+            }
+            else
+                return null;
+        }
        
         //双击播放
     private void listBox_MouseDoubleClick(object sender, EventArgs e)
@@ -292,8 +370,76 @@ namespace WPF_Player
                 playerhandle.Position = TimeSpan.FromSeconds(obj);
             }
         }
-       
-        
+        private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            int index = combobox.SelectedIndex;
+
+            if (index == 0) { currentModel = PlayerModel.looping; }
+            if (index == 1) { currentModel = PlayerModel.sequence; }
+            if (index == 2) { currentModel = PlayerModel.random; }
+        }
+        //歌词
+        void ShowLynic(List<Lynic> lstLynic)
+        {
+
+            new Thread(() =>
+            {
+                int t = System.Environment.TickCount;
+                int notRunningTime = 0;
+                for (int i = 0; i < lstLynic.Count; i++)
+                {
+                    while (currentStatus == PlayerStatus.Pause)
+                    {
+                        notRunningTime++;//如果暂停，则将暂停的毫秒数记录下来。
+                        Thread.Sleep(1);
+                    }
+                    while (System.Environment.TickCount - t - notRunningTime < lstLynic[i].MiniSencond)
+                    {
+                        Thread.Sleep(1);
+                    }
+                    //Console.WriteLine(lstLynic[i].Content);
+                    this.Dispatcher.Invoke((Action)(() =>
+                        {
+                            System.Windows.Controls.ListBoxItem item2 = lynicBoard.Items[2] as System.Windows.Controls.ListBoxItem;
+                            item2.Content = lstLynic[i].Content;
+                            if (i - 1 >= 0)
+                            {
+                                System.Windows.Controls.ListBoxItem item1 = lynicBoard.Items[1] as System.Windows.Controls.ListBoxItem;
+                                item1.Content = lstLynic[i - 1].Content;
+                            }
+                            if (i - 2 >= 0)
+                            {
+                                System.Windows.Controls.ListBoxItem item0 = lynicBoard.Items[0] as System.Windows.Controls.ListBoxItem;
+                                item0.Content = lstLynic[i - 2].Content;
+                            }
+                            if (i + 1 < lstLynic.Count)
+                            {
+                                System.Windows.Controls.ListBoxItem item3 = lynicBoard.Items[3] as System.Windows.Controls.ListBoxItem;
+                                item3.Content = lstLynic[i + 1].Content;
+                            }
+                            if (i + 2 < lstLynic.Count)
+                            {
+                                System.Windows.Controls.ListBoxItem item4 = lynicBoard.Items[4] as System.Windows.Controls.ListBoxItem;
+                                item4.Content = lstLynic[i + 2].Content;
+                            }
+                            if (i == lstLynic.Count - 1)//歌词到了最后一行
+                            {
+                                System.Windows.Controls.ListBoxItem item3 = lynicBoard.Items[3] as System.Windows.Controls.ListBoxItem;
+                                System.Windows.Controls.ListBoxItem item4 = lynicBoard.Items[4] as System.Windows.Controls.ListBoxItem;
+                                item3.Content = "";
+                                item4.Content = "";
+                            }
+                            if (i == lstLynic.Count - 2)//歌词到了倒数第二行
+                            {
+
+                                System.Windows.Controls.ListBoxItem item4 = lynicBoard.Items[4] as System.Windows.Controls.ListBoxItem;
+                                item4.Content = "";
+                            }
+                        }));
+                    lstLynic[i].IsShow = true;
+                }
+            }).Start();
+        }
         private void lb_TitleMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             move = false;
@@ -323,7 +469,18 @@ namespace WPF_Player
         {
             this.WindowState = System.Windows.WindowState.Minimized;
         }
-       
+        private void ci_Checked(object sender, RoutedEventArgs e)
+        {
+            listBox.Visibility = Visibility.Collapsed;
+            lynicBoard.Visibility = Visibility.Visible;
+            SearchBlock.Visibility = Visibility.Collapsed;
+        }
+        private void ci_Unchecked(object sender, RoutedEventArgs e)
+        {
+            listBox.Visibility = Visibility.Visible;
+            lynicBoard.Visibility = Visibility.Collapsed;
+            SearchBlock.Visibility = Visibility.Visible;
+        }
        
     }
 }
