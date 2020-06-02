@@ -1,0 +1,271 @@
+﻿<Window
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:WindowsFormsHost="clr-namespace:System.Windows.Automation.Peers;assembly=WindowsFormsIntegration"
+        xmlns:local="clr-namespace:WPF_Player" x:Class="WPF_Player.MainWindow"
+        xmlns:myWPF="clr-namespace:WPF_Player.Controls"
+        Title="MainWindow" Height="600" Width="900" Loaded="Window_Loaded" Icon="/Pictures/music_player_128px_1201868_easyicon.net.ico" WindowStyle="None" ResizeMode="NoResize" >
+    <Window.Resources>
+        <local:SliderValueConverter x:Key="sliderValueConverter"></local:SliderValueConverter>
+        <Style x:Key="lynicListBoxStyle" TargetType="ListBoxItem">
+
+        </Style>
+    </Window.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width=" 190"/>
+            <ColumnDefinition Width="14*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="45"/>
+            <RowDefinition Height="1*"/>
+            <RowDefinition Height="60"/>
+        </Grid.RowDefinitions>
+        <!--任务栏-->
+        <Canvas x:Name="title" Grid.ColumnSpan="2" Background="#C62F2F" MouseDown="lb_TitleMouseLeftButtonDown" 
+                MouseUp="lb_TitleMouseLeftButtonUp" MouseMove="lb_TitleMouseMove">
+            <Image Source="/Pictures/主题.png" Canvas.Left="10" Canvas.Top="2" Width=" 45 " Height=" 45"/>
+            <TextBlock Canvas.Left="60" Canvas.Top="12" Text="小小音乐盒" FontFamily="幼圆" FontSize="19" Foreground="White"/>
+            <Button x:Name="CloseButton" Width="20" Height="20" Canvas.Left="870" Canvas.Top="15" Background="Transparent" 
+                    Style="{StaticResource ButtonStyle1}" Click="CloseButtonClick">
+                <Image Source="/Pictures/叉叉.png"/>
+            </Button>
+            <Button x:Name="MiniButton"  Style="{StaticResource ButtonStyle1}" Canvas.Left="840"
+                    Canvas.Top="15" Width="20" Height="20" Click="miniButtonClick" Background="Transparent">
+                <Canvas>
+                    <Line X1="-7.5" Y1="-2" X2="7.5" Y2="-2" Stroke="White" StrokeThickness="2"/>
+                </Canvas>
+            </Button>
+        </Canvas>
+        <!--左栏-->
+        <Canvas Grid.Row="1" Background="#F5F5F7">
+            <Border BorderBrush="Gray"  BorderThickness="0,0,1,0" Opacity=" 0.3" Width="190" Height="495"/>
+            <Canvas Height="40" Width="200">
+                <TextBlock Text="我的歌单" FontSize="15" Opacity="0.7" FontFamily="等线"
+                           Canvas.Left="10" Canvas.Top="13"/>
+            </Canvas>
+
+            <Button x:Name="btn02" Click="loadMyfavorite" Style="{StaticResource ButtonStyle3}"  Canvas.Top="35" Width="190"
+                        Height="35">
+                <Canvas  Height="35" Width="190">
+                    <Image Source="/Pictures/收藏.png"   Width="25"
+                                   Canvas.Left="20" Canvas.Top="7"/>
+                    <TextBlock FontSize="14" Canvas.Left="50" Canvas.Top="9" 
+                                   Text="我喜欢的音乐"/>
+                </Canvas>
+            </Button>
+            <Button x:Name="btn01" Click="loadMydownload"  Style="{StaticResource ButtonStyle3}"  Canvas.Top="70" Width="190"
+                        Height="35">
+                <Canvas  Height="35" Width="190">
+                    <Image Source="/Pictures/下载.png"   Width="25"
+                                   Canvas.Left="21" Canvas.Top="7"/>
+                    <TextBlock FontSize="14" Canvas.Left="50" Canvas.Top="9" 
+                                   Text="我的下载"/>
+                </Canvas>
+            </Button>
+            <Button     Click="loadmymusiclist"  Style="{StaticResource ButtonStyle3}"  Canvas.Top="105" Width="190"
+                        Height="35">
+                <Canvas  Height="35" Width="190">
+                    <Image Source="/Pictures/图标2.png"   Width="25"
+                                   Canvas.Left="20" Canvas.Top="5"/>
+                    <TextBlock FontSize="14" Canvas.Left="50" Canvas.Top="9" 
+                                   Text="默认歌单"/>
+                </Canvas>
+            </Button>
+            <!--正在播放的曲目-->
+            <Canvas Canvas.Top="435" Height="60" Width="200">
+                <Border Height="60 " Width=" 200" BorderBrush="Gray" BorderThickness=" 0,1,0,0" Opacity=" 0.2"/>
+                <Image Source="/Pictures/歌曲图标.png" Width=" 50" Height="50" Canvas.Top="7" Canvas.Left="5"/>
+                <Border Height="50 " Width=" 50" BorderBrush="Gray" BorderThickness=" 1" Opacity=" 0.4"
+                        Canvas.Left="5" Canvas.Top="5"/>
+                <TextBlock x:Name="SongNameTextBlock" Text="未知歌曲" Canvas.Left="60" Canvas.Top="10" FontSize=" 17" FontFamily="等线"/>
+                <TextBlock x:Name="SingerTextBlock" Text="未知歌手" Canvas.Left="60" Canvas.Top="35" FontSize=" 16" FontFamily="等线" Opacity="0.8"/>
+            </Canvas>
+        </Canvas>
+        <!--底部-->
+        <Canvas Grid.Row="2" Grid.ColumnSpan="2" Background="#F6F6F8">
+            <Border BorderBrush="Gray"  BorderThickness="0,1,0,0" Opacity=" 0.2" Width="900" Height="60"/>
+            <!--左切歌-->
+            <Button     x:Name="btn_Previous" Click="btn_Previous_Click"  Width=" 40" Height="40 "  Canvas.Left="13" Canvas.Top="10" 
+                    Style="{StaticResource ButtonStyle2}">
+                <Image Source="/Pictures/左切歌.png"/>
+            </Button>
+            <!--播放暂停-->
+            <Button   x:Name="btn_Play" Click="btn_Play_Click"    Style="{StaticResource buttonPlay}" 
+                          Width="45" Height="45" Canvas.Left="70" Canvas.Top="8"/>
+            <!--右切歌-->
+            <Button   x:Name="btn_Next" Click="btn_Next_Click"  Width=" 40" Height="40 "  Canvas.Left="137" Canvas.Top="11" Style="{StaticResource ButtonStyle2}">
+                <Image Source="/Pictures/右切歌.png"/>
+            </Button>
+            <!--当前播放时间-->
+            <TextBlock x:Name="PresentTime" Text="00:00" Canvas.Left="210" Canvas.Top="24"/>
+            <StackPanel Orientation="Horizontal">
+
+                <!--<Label Name="lable" FontSize="10" Foreground="#929292" Height="30" Width="70"></Label>-->
+            </StackPanel>
+            <myWPF:RollingText x:Name="rollingText" FColor="#7B68EE" Text="222" Height="30" FSize="13" VerticalAlignment="Top" Canvas.Left="240" Width="320"/>
+
+            <!--歌曲进度滚动条-->
+
+            <myWPF:UCProcessBar x:Name="trackBar" Canvas.Left="260"  Canvas.Top="21" Width=" 300" Height="20" PlayProcessChanged ="trackBar_PlayProcessChanged"/>
+            <!-- <Slider Canvas.Left="260"  Canvas.Top="20" Width=" 350" Height="20" /> -->
+            <!--总共时间-->
+            <TextBlock x:Name="TotalTime" Text="00:00" Canvas.Right="285" Canvas.Top="24"/>
+            <Image Source="/Pictures/声音.png" Width="30" Height="30" Canvas.Left="633" Canvas.Top="15"/>
+            <!--音量滚动条-->
+            <StackPanel Canvas.Left="654"  Canvas.Top="20" Width="72" Height="20"  >
+                <Slider  IsSnapToTickEnabled="True" IsDirectionReversed="False"  x:Name="slider"  Maximum="100" Minimum="0" Width="50"  Value="{Binding Volume}" Orientation="Horizontal" Margin="0,0,0,0"
+                                IsSelectionRangeEnabled="True" />
+            </StackPanel>
+            <!--歌词开关按钮-->
+            <ToggleButton   Width="35" Height=" 35" Name="ci" Style="{StaticResource NormalToggleButton}"
+                    Canvas.Left="823" Canvas.Top="13" IsChecked="False" Checked="ci_Checked"
+                            Unchecked="ci_Unchecked">
+                <Image Source="/Pictures/歌词图标.png"/>
+            </ToggleButton>
+            <!--桌面歌词-->
+            <Button Style="{StaticResource ButtonStyle1}"  Width="25" Height=" 25"  
+                    Canvas.Left="863" Canvas.Top="17" Click="OpenDesktopLynic_Click">
+                <Image Source="/Pictures/歌词.png"/>
+                <Button.ToolTip >
+                    <TextBlock Text="桌面歌词"/>
+                </Button.ToolTip>
+            </Button>
+            <!--播放模式-->
+            <ComboBox x:Name="combobox"  SelectedIndex="1" SelectionChanged="ComboBox_SelectionChanged"  Height=" 30" Width=" 75" Canvas.Left="735" Canvas.Top="13"  Background="Transparent">
+                <ComboBoxItem>
+                    <StackPanel>
+                        <TextBlock Text="单曲循环" FontSize=" 14"/>
+                    </StackPanel>
+                </ComboBoxItem>
+                <ComboBoxItem>
+                    <StackPanel>
+                        <TextBlock Text="顺序播放" FontSize=" 14"/>
+                    </StackPanel>
+                </ComboBoxItem>
+                <ComboBoxItem>
+                    <StackPanel>
+                        <TextBlock Text="随机播放" FontSize=" 14"/>
+                    </StackPanel>
+                </ComboBoxItem>
+            </ComboBox>
+        </Canvas>
+        <!--右区域-->
+        <Canvas Grid.Column="1" Grid.Row="1" Background=" #FAFAFA">
+            <Canvas Width="700" Height="200">
+                <!--编辑图标-->
+                <Button Width="30" Height="30" Style="{StaticResource ButtonStyle1}" Click="modifySongList_click"
+                            Canvas.Top="27" Canvas.Left="455" >
+                    <Image Source="/Pictures/编辑.png"/>
+                </Button>
+                <Border Height="150 " Width=" 150" Canvas.Top="25" Canvas.Left="25"
+                            BorderBrush="Gray" BorderThickness="1" Opacity=" 0.2"/>
+                <Image Source="/Pictures/歌曲图标.png" Height="150 " Width=" 150" Canvas.Top="29" Canvas.Left="25"/>
+                <Image Source="/Pictures/图标3.png" Width=" 60" Canvas.Top="26" Canvas.Left="194"/>
+                <TextBlock x:Name="songSheet"  FontSize="28" Canvas.Top="27" Canvas.Left="260"/>
+                <TextBlock Text="标签：" FontSize="15" Canvas.Top="80" Canvas.Left="200"/>
+                <TextBlock x:Name="text01" Text="xxxxxxx" FontSize="15" Canvas.Top="80" Canvas.Left="250"/>
+                <TextBlock Text="简介：" FontSize="15" Canvas.Top="105" Canvas.Left="200"/>
+                <TextBlock x:Name="text02" Text="xxxxxxx" FontSize="15" Canvas.Top="105" Canvas.Left="250"
+                                Width="300" Height="40" TextWrapping="Wrap"/>
+                <!-- 统计歌曲数-->
+                <TextBlock Text="歌曲数" FontSize="14" Canvas.Top="27" Canvas.Left="600" Opacity="0.5"/>
+                <Grid Canvas.Top="45" Canvas.Left="602" Width=" 40">
+                    <TextBlock x:Name="num" Text="00" FontSize="14" HorizontalAlignment="Right" Opacity="0.5" />
+                </Grid>
+                <Line X1="650" Y1="29" X2="650" Y2="65" Stroke="Black" Opacity="0.4" StrokeThickness="1"/>
+                <!--添加歌曲-->
+                <Button  Click="loadSong_Click"        Width="90" Height="25"  Style="{StaticResource ButtonStyle3}"
+                            Canvas.Top="150" Canvas.Left="200" >
+                    <Canvas >
+                        <Border Width="90" Height="25" Canvas.Top=" -12.5" Canvas.Left="-45"  BorderThickness="1" BorderBrush="Gray" CornerRadius="2" Opacity="0.3"/>
+                        <Image Source="/Pictures/添加歌曲.png" Width="20" Height="20" Canvas.Top="-9" Canvas.Left="-39"/>
+                        <TextBlock  Canvas.Top="-8" Canvas.Left="-15" Text="添加歌曲" />
+                    </Canvas>
+                </Button>
+                <!-- 删除歌曲-->
+                <Button Width="90" Height="25" Style="{StaticResource ButtonStyle3}" Click="removeSong_click"
+                            Canvas.Top="150" Canvas.Left="300" >
+                    <Canvas >
+                        <Border Width="90" Height="25" Canvas.Top=" -12.5" Canvas.Left="-45"  BorderThickness="1" BorderBrush="Gray" CornerRadius="2" Opacity="0.3"/>
+                        <Image Source="/Pictures/删除歌曲.png" Width="20" Height="20" Canvas.Top="-9" Canvas.Left="-39"/>
+                        <TextBlock  Canvas.Top="-8" Canvas.Left="-15" Text="删除歌曲" />
+                    </Canvas>
+                </Button>
+                <!-- 下载歌曲-->
+                <Button Width="90" Height="25" Style="{StaticResource ButtonStyle3}"
+                            Canvas.Top="150" Canvas.Left="400" Click="DownloadMusic_Click" >
+                    <Canvas >
+                        <Border Width="90" Height="25" Canvas.Top=" -12.5" Canvas.Left="-45"  BorderThickness="1" BorderBrush="Gray" CornerRadius="2" Opacity="0.3"/>
+                        <Image Source="/Pictures/编辑.png" Width="20" Height="20" Canvas.Top="-9" Canvas.Left="-39"/>
+                        <TextBlock  Canvas.Top="-8" Canvas.Left="-15" Text="下载歌曲" />
+                    </Canvas>
+                </Button>
+                
+
+                <Canvas x:Name="SearchBlock" Canvas.Top="171" Canvas.Left="540" Width="150" Height="23">
+                    <!--搜索歌单内歌曲-->
+                    <Border  BorderBrush="Gray" BorderThickness="1" Opacity="0.3"
+                            CornerRadius="13" Width="150" Height="23"/>
+                    <TextBox Name="SearchText"  Style="{x:Null}" Canvas.Top="4" Canvas.Left="10" Width=" 110" Height=" 17"
+                             Text="{Binding Path=text,Mode=TwoWay}" BorderThickness="0" Background="Transparent"/>
+
+                    <!--搜索按钮-->
+                    <Button    Click="SearchClick"  Canvas.Top="2" Canvas.Left="124" Width="20" Height="20"  
+                            Style="{StaticResource ButtonStyle2}" >
+                        <Image Source="/Pictures/搜索.png"/>
+                    </Button>
+                </Canvas>
+            </Canvas>
+            <!--歌曲列单-->
+            <ListView x:Name="listBox" ItemsSource="{Binding}"  MouseDoubleClick="listBox_MouseDoubleClick"
+                         Canvas.Top="200" Width=" 710" Height="295"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+
+                <ListView.ContextMenu>
+                    <ContextMenu>
+                        <!--绑click-->
+                        <MenuItem Header="播放" Click="listBox_MouseDoubleClick"/>
+                        <MenuItem Header="收藏" Click="starmusic"/>
+                    </ContextMenu>
+                </ListView.ContextMenu>
+                <ListView.View >
+                    <GridView ColumnHeaderContainerStyle="{StaticResource GridViewColumnHeaderStyle1}">
+                        <!--绑Displaymember-->
+                        <GridViewColumn DisplayMemberBinding="{Binding Path=Name}" Header="歌曲名称" Width="350"/>
+                        <GridViewColumn DisplayMemberBinding="{Binding Path=Singer}" Header="歌手" Width="150"/>
+                        <GridViewColumn DisplayMemberBinding="{Binding Path=Album}" Header="专辑" Width="209"/>
+                    </GridView>
+                </ListView.View>
+
+                <!--  <ListView.View >
+                    <GridView ColumnHeaderContainerStyle="{StaticResource GridViewColumnHeaderStyle1}">
+                        <GridViewColumn  Width="50"  />
+                        <GridViewColumn Header="音乐标题" Width="210"  />
+                        <GridViewColumn Header="歌手" Width="200"/>
+                        <GridViewColumn Header="专辑" Width="150"/>
+                        <GridViewColumn Header="时长" Width="100"/>
+                    </GridView>
+                </ListView.View>     -->
+            </ListView>
+            <ListBox Name="lynicBoard" ScrollViewer.VerticalScrollBarVisibility="Hidden" 
+                     Canvas.Top="185" Width=" 710" Height="310"  Visibility="Collapsed">
+                <ListBox.Background >
+                    <ImageBrush ImageSource="/Pictures/歌词界面.jpg"/>
+                </ListBox.Background>
+
+                <ListBoxItem HorizontalContentAlignment="Center"  VerticalAlignment="Center" FontSize="18" >
+
+                </ListBoxItem>
+                <ListBoxItem HorizontalContentAlignment="Center" VerticalAlignment="Center" FontSize="18">
+                </ListBoxItem>
+                <ListBoxItem HorizontalContentAlignment="Center" VerticalAlignment="Center" FontSize="25">
+                </ListBoxItem>
+                <ListBoxItem HorizontalContentAlignment="Center" VerticalAlignment="Center" FontSize="18">
+                </ListBoxItem>
+                <ListBoxItem HorizontalContentAlignment="Center" VerticalAlignment="Center" FontSize="18">
+                </ListBoxItem>
+            </ListBox>
+        </Canvas>
+    </Grid>
+</Window>
