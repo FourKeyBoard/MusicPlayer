@@ -45,7 +45,13 @@ namespace WPF_Player
             Pause,
             Stop
         }
-        
+        enum PlayerModel
+        {
+            sequence = 1,
+            looping,
+            random
+
+        }
         private EntityInterface EntityService = new EntityServiceImpl();
         public string text { set; get; }
         private bool move = false;
@@ -55,14 +61,14 @@ namespace WPF_Player
         PlayerModel currentModel = PlayerModel.sequence;
         ObservableCollection<Song> playList = new ObservableCollection<Song>();
         private int currentIndex = 0;
-    
+       
         public string t01;
         public string t02;
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             this.rollingText.Text = "音乐播放器处于暂停状态";
             
-          
+            SearchText.DataContext = this;
             this.listBox.DataContext = playList;
             playerhandle = player.GetPlayerHandle();
             playerhandle.MediaEnded += playerhandle_MediaEnded;
@@ -89,10 +95,11 @@ namespace WPF_Player
             }
             this.songSheet.Text = "默认歌单";
             s2 = this.songSheet.Text;
-           
+            this.num.Text = i.ToString();//设置歌曲数
+            this.text01.Text = texts01[0].T1;//设置歌单标签
+            this.text02.Text = texts01[0].T2;//设置歌单简介
         }
         
-       
         void player_playEvent_thread(object obj)
         {
             double PlayedTime = (double)(this.Dispatcher.Invoke((Func<double>)(() => { return playerhandle.Position.TotalMilliseconds; })));
@@ -198,13 +205,29 @@ namespace WPF_Player
                 {
                     player.CurrentSong.LstLynic.ForEach(x => x.IsShow = false);
                 }
-                PlayNext(); 
-                
+                if (currentModel == PlayerModel.sequence) { PlayNext(); }
+                else if (currentModel == PlayerModel.looping) { PlayAgain(); }
+                else { PlayRandomly(); }
             }
         }
-        
+      
 
-       
+
+        private void SearchClick(object sender, RoutedEventArgs e) {
+            text = SearchText.Text;
+           
+            
+         ObservableCollection<Song>   playList2 = new ObservableCollection<Song>();
+            foreach (Song s in playList) {
+                if (s.Name.IndexOf(""+text)!=-1) {
+                    playList2.Add(s);
+                }
+            }
+          
+            playList.Clear();
+            foreach (Song s in playList2) { playList.Add(s); }
+           
+        }
         //选择一首歌然后点击播放按钮
         private void btn_Play_Click(object sender, RoutedEventArgs e)
         {
@@ -244,13 +267,13 @@ namespace WPF_Player
             }
 
         }
-        
+       
         private void btn_Previous_Click(object sender, RoutedEventArgs e)
         {
             if (playList.Count > 0)
                 PlayPrevious();
         }
-      
+       
         void PlayPrevious()
         {
             if (currentStatus == PlayerStatus.Start)
@@ -263,7 +286,21 @@ namespace WPF_Player
             player.Play();
             currentStatus = PlayerStatus.Start;
         }
-        
+        //单曲循环
+        void PlayAgain()
+        {
+            if (currentStatus == PlayerStatus.Start)
+                player.Stop();
+            this.listBox.SelectedIndex = currentIndex;
+            player.CurrentSong = playList[currentIndex];
+            foreach (var item in this.lynicBoard.Items)
+            {
+                (item as ListBoxItem).Content = "";
+            }
+            player.Play();
+            currentStatus = PlayerStatus.Start;
+
+        }
         //播放下一首
         void PlayNext()
         {
@@ -282,7 +319,23 @@ namespace WPF_Player
             currentStatus = PlayerStatus.Start;
 
         }
-       
+        //随机播放
+        void PlayRandomly()
+        {
+            if (currentStatus == PlayerStatus.Start)
+                player.Stop();
+            Random rd = new Random();
+            currentIndex = rd.Next(0, playList.Count);
+            this.listBox.SelectedIndex = currentIndex;
+            player.CurrentSong = playList[currentIndex];
+            foreach (var item in this.lynicBoard.Items)
+            {
+                (item as ListBoxItem).Content = "";
+            }
+            player.Play();
+            currentStatus = PlayerStatus.Start;
+
+        }
         //下一首
         private void btn_Next_Click(object sender, RoutedEventArgs e)
         {
@@ -331,7 +384,101 @@ namespace WPF_Player
             this.num.Text = i.ToString();
 
         }
-        
+        //加载默认歌单
+        private void loadmymusiclist(object sender, RoutedEventArgs e)
+        {
+
+            string folderPath = ConfigurationManager.AppSettings["folderPath"];
+            folderPath = IOPath.GetFullPath(folderPath);
+
+            string[] mp3Files = EntityService.GetMusicFiles(folderPath);
+            if (mp3Files != null)
+            {
+                playList.Clear();
+                mp3Files.ToList().ForEach(x => playList.Add(new Song() { Location = x }));
+                //获取歌词和歌曲数
+                int i = 0;
+                foreach (Song s in playList)
+                {
+                    s.LstLynic = GetLynicBySong(s);
+                    i++;
+                }
+                this.num.Text = i.ToString();
+            }
+            this.songSheet.Text = "默认歌单";
+            s2 = this.songSheet.Text;
+
+            this.text01.Text = texts01[0].T1;//设置歌单标签
+            this.text02.Text = texts01[0].T2;//设置歌单简介
+
+        }
+        //加载我的下载歌单
+        public void loadMydownload(object sender, RoutedEventArgs e)
+        {
+
+            string folderPath = ConfigurationManager.AppSettings["Mydownload"];
+            folderPath = IOPath.GetFullPath(folderPath);
+
+            string[] mp3Files = EntityService.GetMusicFiles(folderPath);
+            if (mp3Files != null)
+            {
+                playList.Clear();
+                mp3Files.ToList().ForEach(x => playList.Add(new Song() { Location = x }));
+                //获取歌词和歌曲数
+                int i = 0;
+                foreach (Song s in playList)
+                {
+                    s.LstLynic = GetLynicBySong(s);
+                    i++;
+                }
+                this.num.Text = i.ToString();
+            }
+            this.songSheet.Text = "我的下载";
+            s2 = this.songSheet.Text;
+
+            this.text01.Text = texts01[1].T1;//设置歌单标签
+            this.text02.Text = texts01[1].T2;//设置歌单简介
+        }
+        //加载我喜欢的音乐歌单
+        public void loadMyfavorite(object sender, RoutedEventArgs e)
+        {
+
+            string folderPath = ConfigurationManager.AppSettings["Myfavorite"];
+            folderPath = IOPath.GetFullPath(folderPath);
+
+            string[] mp3Files = EntityService.GetMusicFiles(folderPath);
+            if (mp3Files != null)
+            {
+                playList.Clear();
+                mp3Files.ToList().ForEach(x => playList.Add(new Song() { Location = x }));
+                //获取歌词和歌曲数
+                int i = 0;
+                foreach (Song s in playList)
+                {
+                    s.LstLynic = GetLynicBySong(s);
+                    i++;
+                }
+                this.num.Text = i.ToString();
+            }
+            this.songSheet.Text = "我喜欢的音乐";
+            s2 = this.songSheet.Text;
+
+            this.text01.Text = texts01[2].T1;//设置歌单标签
+            this.text02.Text = texts01[2].T2;//设置歌单简介
+        }
+        //修改歌单信息
+        private void modifySongList_click(object sender, RoutedEventArgs e)
+        {
+            ModifySongList modifySongList = new ModifySongList();
+            //modifySongList.textbox01.Text = this.text01.Text;
+            //modifySongList.textbox02.Text = this.text02.Text;
+            modifySongList.Owner = this;
+            modifySongList.text01 = this.text01.Text;
+            modifySongList.text02 = this.text02.Text;
+            //this.Close();
+            modifySongList.ShowDialog();
+        }
+        //根据歌曲，获取歌词
         private List<Lynic> GetLynicBySong(Song s)
         {
             string lynicFile1 = IOPath.Combine(IOPath.GetDirectoryName(s.Location), IOPath.GetFileNameWithoutExtension(s.Location) + ".lrc");
@@ -347,7 +494,25 @@ namespace WPF_Player
             else
                 return null;
         }
-       
+        //收藏歌曲
+        private void starmusic(object sender, EventArgs e)
+        {
+
+            Song song = this.listBox.SelectedItem as Song;
+            string filename = song.Location;
+            //System.Windows.MessageBox.Show(filename);
+            string path = filename.Substring(0, filename.LastIndexOf("\\"));
+            string file = filename.Substring(filename.LastIndexOf("\\") + 1);
+
+            string folderPath = ConfigurationManager.AppSettings["Myfavorite"];
+            folderPath = System.IO.Path.GetFullPath(folderPath);
+
+            string destPath = folderPath + "\\" + file;
+            if (!File.Exists(destPath))
+            {
+                File.Copy(song.Location, destPath);
+            }
+        }
         //双击播放
     private void listBox_MouseDoubleClick(object sender, EventArgs e)
         {
@@ -481,6 +646,13 @@ namespace WPF_Player
             lynicBoard.Visibility = Visibility.Collapsed;
             SearchBlock.Visibility = Visibility.Visible;
         }
-       
+        //下载歌曲
+        private void DownloadMusic_Click(object sender, RoutedEventArgs e)
+        {
+            DownloadMusic downloadMusicWindow = new DownloadMusic(ref player);
+            downloadMusicWindow.Title = "下载音乐";
+            downloadMusicWindow.Owner = this;
+            downloadMusicWindow.ShowDialog();
+        }
     }
 }
