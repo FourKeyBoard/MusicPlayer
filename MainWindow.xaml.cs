@@ -25,7 +25,7 @@ using System.Windows.Threading;
 using System.Xml.Serialization;
 using Shell32;
 using System.Xml;
-
+using NAudio;
 namespace WPF_Player
 {
     using IOPath = System.IO.Path;
@@ -54,6 +54,8 @@ namespace WPF_Player
             random
 
         }
+        RecordController record = new RecordController();
+        bool startRecord = false;
         private EntityInterface EntityService = new EntityServiceImpl();
         public string text { set; get; }
         private bool move = false;
@@ -67,12 +69,13 @@ namespace WPF_Player
         public static string s1 = "s.xml";
         public static List<ListText> texts01 = ListText.Import(s1);
         public static string s2;
-        //第一次输出XML文件
+        ////第一次输出XML文件
         //public List<ListText> texts = new List<ListText>
         //{
         //    new ListText("默认", "导入歌曲默认歌单"),
         //    new ListText("下载", "下载歌曲默认歌单"),
-        //    new ListText("喜欢", "我喜欢的音乐")
+        //    new ListText("喜欢", "我喜欢的音乐"),
+        //    new ListText("录制歌单", "我录制的音乐")
         //};
         public string t01;
         public string t02;
@@ -81,12 +84,10 @@ namespace WPF_Player
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             this.rollingText.Text = "音乐播放器处于暂停状态";
-            //第一次生成XML文件，第二次注释掉
+            ////第一次生成XML文件，第二次注释掉
             //ListText.listTexts = texts;
             //string s1 = "s.xml";
             //ListText.Export(s1);
-            //List<ListText> texts01 = ListText.Import(s1);
-            //System.Windows.MessageBox.Show(texts01[0].T1);
             SearchText.DataContext = this;
             this.listBox.DataContext = playList;
             playerhandle = player.GetPlayerHandle();
@@ -317,13 +318,13 @@ namespace WPF_Player
             }
 
         }
-        //播放上一首
+        //随机播放
         private void btn_Previous_Click(object sender, RoutedEventArgs e)
         {
             if (playList.Count > 0)
                 PlayPrevious();
         }
-    
+        //循环播放
         void PlayPrevious()
         {
             if (currentStatus == PlayerStatus.Start)
@@ -450,7 +451,6 @@ namespace WPF_Player
         //加载默认歌单
         private void loadmymusiclist(object sender, RoutedEventArgs e)
         {
-
             string folderPath = ConfigurationManager.AppSettings["folderPath"];
             folderPath = IOPath.GetFullPath(folderPath);
 
@@ -487,9 +487,19 @@ namespace WPF_Player
             if (mp3Files != null)
             {
                 playList.Clear();
-                mp3Files.ToList().ForEach(x => playList.Add(new Song() { Location = x }));
-                //获取歌词和歌曲数
-                int i = 0;
+                if (File.Exists("Songs.xml"))
+                {
+                    XmlSerializer xmlSerializer = new XmlSerializer(typeof(List<Song>));
+                    using (FileStream fs = new FileStream("Songs.xml", FileMode.Open))
+                    {
+                        List<Song> songs = (List<Song>)xmlSerializer.Deserialize(fs);
+                        songs.ForEach(x => playList.Add(new Song() { Location = x.Location, Album = x.Album, Singer = x.Singer, Name = x.Name }));
+                    }
+                }
+                
+                    //mp3Files.ToList().ForEach(x => playList.Add(new Song() { Location = x }));
+                    //获取歌词和歌曲数
+                    int i = 0;
                 foreach (Song s in playList)
                 {
                     //singer_get(s);
@@ -531,6 +541,34 @@ namespace WPF_Player
 
             this.text01.Text = texts01[2].T1;//设置歌单标签
             this.text02.Text = texts01[2].T2;//设置歌单简介
+        }
+        //加载录制歌单
+        public void loadmyrecord(object sender, RoutedEventArgs e)
+        {
+
+            string folderPath = ConfigurationManager.AppSettings["myrecord"];
+            folderPath = IOPath.GetFullPath(folderPath);
+
+            string[] mp3Files = EntityService.GetMusicFiles(folderPath);
+            if (mp3Files != null)
+            {
+                playList.Clear();
+                mp3Files.ToList().ForEach(x => playList.Add(new Song() { Location = x }));
+                //获取歌词和歌曲数
+                int i = 0;
+                foreach (Song s in playList)
+                {
+                    singer_get(s);
+                    s.LstLynic = GetLynicBySong(s);
+                    i++;
+                }
+                this.num.Text = i.ToString();
+            }
+            this.songSheet.Text = "我录制的音乐";
+            s2 = this.songSheet.Text;
+
+            this.text01.Text = texts01[3].T1;//设置歌单标签
+            this.text02.Text = texts01[3].T2;//设置歌单简介
         }
         //修改歌单信息
         private void modifySongList_click(object sender, RoutedEventArgs e)
@@ -751,5 +789,45 @@ namespace WPF_Player
             lynic lynic1 = new lynic();
             lynic1.Show();
         }
+
+
+        private void recordButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!startRecord)
+            {
+                System.Windows.MessageBox.Show("开始录音");
+
+                if (this.listBox.SelectedItem != null)
+                {
+                    Song song = this.listBox.SelectedItem as Song;
+                    string folderPath = ConfigurationManager.AppSettings["myrecord"];
+                    folderPath = System.IO.Path.GetFullPath(folderPath);
+
+                    string destPath = folderPath + "\\" + song.Name + "的录音" + ".wav";
+                    //  record.StartRecord("D:\\rec.wav");
+                    record.StartRecord(destPath);
+                   
+                }
+                else { 
+                    string s = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString();
+
+                    string folderPath = ConfigurationManager.AppSettings["myrecord"];
+                    folderPath = System.IO.Path.GetFullPath(folderPath);
+
+                    string destPath = folderPath + "\\" + s + ".wav";
+                    record.StartRecord(destPath);
+                   
+                }
+                startRecord = true;
+            }
+            else
+            {
+                System.Windows.MessageBox.Show("录音结束");
+                record.StopRecord();
+                startRecord = false;
+            }
+        }
+
+
     }
 }
