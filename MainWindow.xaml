@@ -36,11 +36,16 @@
                     <Line X1="-7.5" Y1="-2" X2="7.5" Y2="-2" Stroke="White" StrokeThickness="2"/>
                 </Canvas>
             </Button>
+            
+
         </Canvas>
         <!--左栏-->
         <Canvas Grid.Row="1" Background="#F5F5F7">
+            <Button  Content="录音"   Click="recordButton_Click"  Style="{StaticResource ButtonStyle3}" 
+                    Canvas.Top="9"  Canvas.Left="100" Background="#E6E7EA"
+                    Width="70" Height="25"  FontFamily="幼圆" FontSize="17" Foreground="Black"/>
             <Border BorderBrush="Gray"  BorderThickness="0,0,1,0" Opacity=" 0.3" Width="190" Height="495"/>
-            <Canvas Height="40" Width="200">
+            <Canvas Height="40" Width="100">
                 <TextBlock Text="我的歌单" FontSize="15" Opacity="0.7" FontFamily="等线"
                            Canvas.Left="10" Canvas.Top="13"/>
             </Canvas>
@@ -72,7 +77,16 @@
                                    Text="默认歌单"/>
                 </Canvas>
             </Button>
-            <!--正在播放的曲目-->
+            <Button     Click="loadmyrecord"  Style="{StaticResource ButtonStyle3}"  Canvas.Top="140" Width="190"
+                        Height="35">
+                <Canvas  Height="35" Width="190">
+                    <Image Source="/Pictures/图标2.png"   Width="25"
+                                   Canvas.Left="20" Canvas.Top="5"/>
+                    <TextBlock FontSize="14" Canvas.Left="50" Canvas.Top="9" 
+                                   Text="我的录音"/>
+                </Canvas>
+            </Button>
+                <!--正在播放的曲目-->
             <Canvas Canvas.Top="435" Height="60" Width="200">
                 <Border Height="60 " Width=" 200" BorderBrush="Gray" BorderThickness=" 0,1,0,0" Opacity=" 0.2"/>
                 <Image Source="/Pictures/歌曲图标.png" Width=" 50" Height="50" Canvas.Top="7" Canvas.Left="5"/>
@@ -103,7 +117,7 @@
 
                 <!--<Label Name="lable" FontSize="10" Foreground="#929292" Height="30" Width="70"></Label>-->
             </StackPanel>
-            <myWPF:RollingText x:Name="rollingText" FColor="#7B68EE" Text="222" Height="30" FSize="13" VerticalAlignment="Top" Canvas.Left="240" Width="320"/>
+            <myWPF:RollingText x:Name="rollingText" FColor="#7B68EE" Text="222" Height="30" FSize="13" VerticalAlignment="Top" Canvas.Left="182" Width="480" RenderTransformOrigin="0.104,0.62"/>
 
             <!--歌曲进度滚动条-->
 
@@ -251,7 +265,7 @@
             <ListBox Name="lynicBoard" ScrollViewer.VerticalScrollBarVisibility="Hidden" 
                      Canvas.Top="185" Width=" 710" Height="310"  Visibility="Collapsed">
                 <ListBox.Background >
-                    <ImageBrush ImageSource="/Pictures/歌词界面.jpg"/>
+                    <ImageBrush x:Name="image1" ImageSource="/Pictures/歌词界面.jpg"/>
                 </ListBox.Background>
 
                 <ListBoxItem HorizontalContentAlignment="Center"  VerticalAlignment="Center" FontSize="18" >
