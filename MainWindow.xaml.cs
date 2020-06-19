@@ -425,7 +425,11 @@ namespace WPF_Player
             {
                 Song song = listBox.SelectedItem as Song;
                 singer_get(song);
-                File.Delete(song.Location);
+                if (File.Exists(song.Location))
+                {
+                    File.Delete(song.Location);
+                }
+                
                 //同时删除xml中的节点
                 XmlDocument xmlDoc = new XmlDocument();
                 xmlDoc.Load("Songs.xml");
