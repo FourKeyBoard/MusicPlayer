@@ -41,9 +41,12 @@
         </Canvas>
         <!--左栏-->
         <Canvas Grid.Row="1" Background="#F5F5F7">
-            <Button  Content="录音"   Click="recordButton_Click"  Style="{StaticResource ButtonStyle3}" 
-                    Canvas.Top="9"  Canvas.Left="100" Background="#E6E7EA"
-                    Width="70" Height="25"  FontFamily="幼圆" FontSize="17" Foreground="Black"/>
+
+            <Button   Click="recordButton_Click"  Style="{StaticResource ButtonStyle3}" 
+                    Canvas.Top="2"  Canvas.Left="95" FontWeight="Bold" Width="90">
+                <Image Source="/Pictures/录制.png"/>
+            </Button>
+                    
             <Border BorderBrush="Gray"  BorderThickness="0,0,1,0" Opacity=" 0.3" Width="190" Height="495"/>
             <Canvas Height="40" Width="100">
                 <TextBlock Text="我的歌单" FontSize="15" Opacity="0.7" FontFamily="等线"
@@ -117,7 +120,7 @@
 
                 <!--<Label Name="lable" FontSize="10" Foreground="#929292" Height="30" Width="70"></Label>-->
             </StackPanel>
-            <myWPF:RollingText x:Name="rollingText" FColor="#7B68EE" Text="222" Height="30" FSize="13" VerticalAlignment="Top" Canvas.Left="182" Width="480" RenderTransformOrigin="0.104,0.62"/>
+            <myWPF:RollingText x:Name="rollingText" FColor="#7B68EE" Text="222" Height="25" FSize="13" VerticalAlignment="Top" Canvas.Left="240" Width="320" RenderTransformOrigin="0.104,0.62"/>
 
             <!--歌曲进度滚动条-->
 
